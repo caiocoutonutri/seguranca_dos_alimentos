@@ -8,7 +8,11 @@ import io
 import tempfile
 from fpdf import FPDF
 from modules.formulario import SECOES, classificar_nota
-
+from modules.dashboard import carregar_historico
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import pandas as pd_hist
 
 def _safe(text):
     """Sanitiza texto para fontes core do FPDF (latin-1)."""
@@ -268,6 +272,88 @@ def gerar_pdf(dados_visita):
     pdf.cell(col_widths[4], 7, _safe(label_cls), border=1, fill=True, align="C")
     pdf.set_text_color(*PRETO)
     pdf.ln(12)
+
+    # ══════════════════════════════════════════════
+    # GRÁFICO DE EVOLUÇÃO (últimas 10 visitas)
+    # ══════════════════════════════════════════════
+
+    try:
+        matplotlib.use("Agg")
+
+        historico = carregar_historico()
+        unidade_atual = dados_visita.get("unidade", "")
+
+        # Filtrar pela unidade atual e pegar as últimas 10
+        hist_unidade = [h for h in historico if h.get("unidade") == unidade_atual]
+
+        if len(hist_unidade) >= 2:
+
+            df_hist = pd_hist.DataFrame(hist_unidade)
+            df_hist["data_dt"] = pd_hist.to_datetime(df_hist["data_visita"], format="%d/%m/%Y", errors="coerce")
+            df_hist = df_hist.sort_values("data_dt").tail(10)
+
+            fig_mpl, ax = plt.subplots(figsize=(8, 3.2), dpi=150)
+
+            # Linha principal
+            ax.plot(
+                df_hist["data_visita"].values,
+                df_hist["percentual_geral"].values,
+                color="#1B4F72", linewidth=2, marker="o", markersize=6,
+                zorder=5,
+            )
+
+            # Labels nos pontos
+            for _, row in df_hist.iterrows():
+                ax.annotate(
+                    f"{row['percentual_geral']:.0f}%",
+                    (row["data_visita"], row["percentual_geral"]),
+                    textcoords="offset points", xytext=(0, 10),
+                    ha="center", fontsize=7, color="#1B4F72", fontweight="bold",
+                )
+
+            # Faixas de referência
+            ax.axhline(y=90, color="#1a5e1a", linestyle="--", linewidth=0.8, alpha=0.7)
+            ax.axhline(y=80, color="#27ae60", linestyle="--", linewidth=0.8, alpha=0.7)
+            ax.axhline(y=70, color="#f39c12", linestyle="--", linewidth=0.8, alpha=0.7)
+
+            # Labels das faixas
+            ax.text(len(df_hist) - 0.5, 91, "Excelente", fontsize=6, color="#1a5e1a", va="bottom")
+            ax.text(len(df_hist) - 0.5, 81, "Bom", fontsize=6, color="#27ae60", va="bottom")
+            ax.text(len(df_hist) - 0.5, 71, "Atencao", fontsize=6, color="#f39c12", va="bottom")
+
+            ax.set_ylim(0, 105)
+            ax.set_ylabel("Conformidade (%)", fontsize=8)
+            ax.set_xlabel("Data da Visita", fontsize=8)
+            ax.tick_params(axis="both", labelsize=7)
+            plt.xticks(rotation=45, ha="right")
+            ax.grid(axis="y", alpha=0.3)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+            plt.tight_layout()
+
+            # Salvar como PNG temporário
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                fig_mpl.savefig(tmp.name, format="png", bbox_inches="tight")
+                tmp_path = tmp.name
+            plt.close(fig_mpl)
+
+            # Nova página se necessário
+            if pdf.get_y() > 160:
+                pdf.add_page()
+
+            pdf._section_title(_safe(f"Evolucao - {unidade_atual} (ultimas {len(df_hist)} visitas)"))
+
+            # Centralizar imagem
+            img_w = 170
+            img_x = (210 - img_w) / 2
+            pdf.image(tmp_path, x=img_x, y=pdf.get_y(), w=img_w)
+            pdf.ln(75)
+
+            os.remove(tmp_path)
+
+    except Exception:
+        pass  # Se falhar, pula silenciosamente
 
     # ══════════════════════════════════════════════
     # NÃO CONFORMIDADES
