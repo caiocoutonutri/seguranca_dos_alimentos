@@ -292,46 +292,39 @@ def gerar_pdf(dados_visita):
             df_hist = pd_hist.DataFrame(hist_unidade)
             df_hist["data_dt"] = pd_hist.to_datetime(df_hist["data_visita"], format="%d/%m/%Y", errors="coerce")
             df_hist = df_hist.sort_values("data_dt").tail(10)
+            df_hist = df_hist.reset_index(drop=True)
 
-            fig_mpl, ax = plt.subplots(figsize=(8, 3.2), dpi=150)
+            datas = df_hist["data_visita"].tolist()
+            valores = df_hist["percentual_geral"].tolist()
+            x_pos = list(range(len(datas)))
+
+            fig_mpl, ax = plt.subplots(figsize=(10, 4), dpi=120)
 
             # Linha principal
-            ax.plot(
-                df_hist["data_visita"].values,
-                df_hist["percentual_geral"].values,
-                color="#1B4F72", linewidth=2, marker="o", markersize=6,
-                zorder=5,
-            )
+            ax.plot(x_pos, valores, color="#1B4F72", linewidth=2, marker="o", markersize=7, zorder=5)
 
             # Labels nos pontos
-            for _, row in df_hist.iterrows():
-                ax.annotate(
-                    f"{row['percentual_geral']:.0f}%",
-                    (row["data_visita"], row["percentual_geral"]),
-                    textcoords="offset points", xytext=(0, 10),
-                    ha="center", fontsize=7, color="#1B4F72", fontweight="bold",
-                )
+            for i, (x, v) in enumerate(zip(x_pos, valores)):
+                ax.annotate(f"{v:.0f}%", (x, v), textcoords="offset points", xytext=(0, 12),
+                            ha="center", fontsize=8, color="#1B4F72", fontweight="bold")
 
             # Faixas de referência
-            ax.axhline(y=90, color="#1a5e1a", linestyle="--", linewidth=0.8, alpha=0.7)
-            ax.axhline(y=80, color="#27ae60", linestyle="--", linewidth=0.8, alpha=0.7)
-            ax.axhline(y=70, color="#f39c12", linestyle="--", linewidth=0.8, alpha=0.7)
+            ax.axhline(y=90, color="#1a5e1a", linestyle="--", linewidth=0.8, alpha=0.7, label="Excelente (90%)")
+            ax.axhline(y=80, color="#27ae60", linestyle="--", linewidth=0.8, alpha=0.7, label="Bom (80%)")
+            ax.axhline(y=70, color="#f39c12", linestyle="--", linewidth=0.8, alpha=0.7, label="Atencao (70%)")
 
-            # Labels das faixas
-            ax.text(len(df_hist) - 0.5, 91, "Excelente", fontsize=6, color="#1a5e1a", va="bottom")
-            ax.text(len(df_hist) - 0.5, 81, "Bom", fontsize=6, color="#27ae60", va="bottom")
-            ax.text(len(df_hist) - 0.5, 71, "Atencao", fontsize=6, color="#f39c12", va="bottom")
-
-            ax.set_ylim(0, 105)
-            ax.set_ylabel("Conformidade (%)", fontsize=8)
-            ax.set_xlabel("Data da Visita", fontsize=8)
-            ax.tick_params(axis="both", labelsize=7)
-            plt.xticks(rotation=45, ha="right")
+            ax.set_ylim(0, 110)
+            ax.set_ylabel("Conformidade (%)", fontsize=9)
+            ax.set_xlabel("Data da Visita", fontsize=9)
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels(datas, rotation=45, ha="right", fontsize=7)
+            ax.tick_params(axis="y", labelsize=8)
             ax.grid(axis="y", alpha=0.3)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
+            ax.legend(fontsize=7, loc="lower right")
 
-            plt.tight_layout()
+            fig_mpl.subplots_adjust(left=0.08, right=0.95, top=0.92, bottom=0.22)
 
             # Salvar como PNG temporário
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
@@ -353,10 +346,8 @@ def gerar_pdf(dados_visita):
 
             os.remove(tmp_path)
 
-    except Exception as e:
-        print(f"ERRO NO GRAFICO: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        pass  # Se falhar, pula silenciosamente
 
     # ══════════════════════════════════════════════
     # NÃO CONFORMIDADES
