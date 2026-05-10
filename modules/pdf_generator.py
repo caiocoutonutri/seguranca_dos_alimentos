@@ -8,11 +8,7 @@ import io
 import tempfile
 from fpdf import FPDF
 from modules.formulario import SECOES, classificar_nota
-from modules.dashboard import carregar_historico
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
-import pandas as pd_hist
+
 
 def _safe(text):
     """Sanitiza texto para fontes core do FPDF (latin-1)."""
@@ -278,7 +274,12 @@ def gerar_pdf(dados_visita):
     # ══════════════════════════════════════════════
 
     try:
+        from modules.dashboard import carregar_historico
+        import matplotlib
         matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.ticker as mticker
+        import tempfile
 
         historico = carregar_historico()
         unidade_atual = dados_visita.get("unidade", "")
@@ -287,7 +288,7 @@ def gerar_pdf(dados_visita):
         hist_unidade = [h for h in historico if h.get("unidade") == unidade_atual]
 
         if len(hist_unidade) >= 2:
-
+            import pandas as pd_hist
             df_hist = pd_hist.DataFrame(hist_unidade)
             df_hist["data_dt"] = pd_hist.to_datetime(df_hist["data_visita"], format="%d/%m/%Y", errors="coerce")
             df_hist = df_hist.sort_values("data_dt").tail(10)
