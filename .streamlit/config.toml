@@ -1,0 +1,14 @@
+(
+echo [theme]
+echo primaryColor = "#1B4F72"
+echo backgroundColor = "#FFFFFF"
+echo secondaryBackgroundColor = "#F0F2F6"
+echo textColor = "#1C1C1C"
+echo font = "sans serif"
+echo.
+echo [server]
+echo headless = true
+echo.
+echo [browser]
+echo gatherUsageStats = false
+) > .streamlit\config.toml
