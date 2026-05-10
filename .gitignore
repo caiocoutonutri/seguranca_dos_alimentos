@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 (
 echo # Credenciais
 echo .streamlit/secrets.toml
@@ -22,4 +23,30 @@ echo .DS_Store
 echo.
 echo # Dados sensíveis
 echo data/*.xlsx
+=======
+(
+echo # Credenciais
+echo .streamlit/secrets.toml
+echo .env
+echo.
+echo # Python
+echo __pycache__/
+echo *.pyc
+echo *.pyo
+echo.
+echo # Ambiente virtual (caso use no futuro)
+echo .venv/
+echo venv/
+echo.
+echo # IDE
+echo .vscode/
+echo .idea/
+echo.
+echo # OS
+echo Thumbs.db
+echo .DS_Store
+echo.
+echo # Dados sensíveis
+echo data/*.xlsx
+>>>>>>> 5a3114a19a97354f195afd48a5eed29c948ad76d
 ) > .gitignore

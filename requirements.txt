@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 streamlit>=1.37.0
 pandas>=2.0.0
 plotly>=5.18.0
 fpdf2>=2.7.0
 openpyxl>=3.1.0
+=======
+streamlit>=1.37.0
+pandas>=2.0.0
+plotly>=5.18.0
+fpdf2>=2.7.0
+openpyxl>=3.1.0
+>>>>>>> 5a3114a19a97354f195afd48a5eed29c948ad76d
 Pillow>=10.0.0
