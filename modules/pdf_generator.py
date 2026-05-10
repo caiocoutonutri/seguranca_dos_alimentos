@@ -353,8 +353,10 @@ def gerar_pdf(dados_visita):
 
             os.remove(tmp_path)
 
-    except Exception:
-        pass  # Se falhar, pula silenciosamente
+    except Exception as e:
+        print(f"ERRO NO GRAFICO: {e}")
+        import traceback
+        traceback.print_exc()
 
     # ══════════════════════════════════════════════
     # NÃO CONFORMIDADES
