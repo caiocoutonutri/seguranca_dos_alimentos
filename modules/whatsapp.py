@@ -54,10 +54,6 @@ def gerar_link_whatsapp(dados_visita):
 
     # Mensagem completa
     mensagem = (
-        f"✦ *CAIO COUTO NUTRICIONISTA* ✦\n"
-        f"_Consultoria de Alimentos_\n"
-        f"\n"
-        f"{LINHA}\n"
         f"📋 *RELATORIO DE VISITA TECNICA*\n"
         f"_RDC 216 - Seguranca dos Alimentos_\n"
         f"{LINHA}\n"
