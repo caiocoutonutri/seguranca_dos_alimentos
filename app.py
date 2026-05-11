@@ -54,8 +54,8 @@ st.markdown("""
         padding: 2rem 0 1rem 0;
     }
     .brand-header img {
-        width: 80px;
-        margin-bottom: 0.5rem;
+        width: 120px;
+        margin-bottom: 0.8rem;
     }
     .brand-header h1 {
         font-family: 'Playfair Display', Georgia, serif;
@@ -90,15 +90,36 @@ st.markdown("""
     /* Separador dourado */
     .section-divider {
         border: none;
-        border-top: 1px solid #E8E0D0;
+        border-top: 1.5px solid #C5A55A;
         margin: 1.5rem 0;
+        opacity: 0.5;
     }
 
-    /* Expanders refinados */
+    /* TODAS as linhas hr do Streamlit em dourado */
+    hr {
+        border: none !important;
+        border-top: 1.5px solid #C5A55A !important;
+        opacity: 0.4;
+    }
+
+    /* Expanders com borda dourada */
     .streamlit-expanderHeader {
         font-family: 'Inter', sans-serif;
         font-size: 0.95rem;
         font-weight: 500;
+    }
+    details {
+        border: 1px solid #E8DCC8 !important;
+        border-radius: 8px !important;
+    }
+    details[open] {
+        border-color: #C5A55A !important;
+    }
+
+    /* Tabs com acento dourado */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+        border-bottom-color: #C5A55A !important;
+        color: #1C1C1C !important;
     }
 
     /* Botões com estilo gold */
@@ -198,6 +219,7 @@ with col2:
         format="DD/MM/YYYY",
         help="Data em que a visita técnica está sendo realizada",
     )
+
 
 col3, col4 = st.columns(2)
 
