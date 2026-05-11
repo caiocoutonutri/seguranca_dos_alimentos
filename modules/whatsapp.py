@@ -7,17 +7,13 @@ from urllib.parse import quote
 # Número do Caio Couto (com código do país)
 NUMERO_CAIO = "5521967100559"
 
+# Separador visual
+LINHA = "━━━━━━━━━━━━━━━━━━"
+
 
 def gerar_link_whatsapp(dados_visita):
     """
     Gera o link wa.me com mensagem pré-formatada.
-
-    Args:
-        dados_visita: dict com unidade, data_visita, responsavel,
-                      nutricionista, resultado, etc.
-
-    Returns:
-        tuple: (url, mensagem_texto)
     """
     resultado = dados_visita["resultado"]
     emoji, label_cls, _ = resultado["classificacao"]
@@ -26,10 +22,10 @@ def gerar_link_whatsapp(dados_visita):
     resumo_secoes = ""
     for sec in resultado["secoes"]:
         if sec["maximo"] > 0:
-            emoji_s, label_s, _ = _classificar_simples(sec["percentual"])
-            resumo_secoes += f"  {emoji_s} {sec['numero']}. {sec['titulo']}: {sec['percentual']}%\n"
+            emoji_s, _, _ = _classificar_simples(sec["percentual"])
+            resumo_secoes += f"{emoji_s} {sec['numero']}. {sec['titulo']}: *{sec['percentual']}%*\n"
 
-    # Montar lista de NCs (só as top 5 mais graves)
+    # Montar lista de NCs (top 5 mais graves)
     ncs_texto = ""
     if resultado["nao_conformidades"]:
         ncs_ordenadas = sorted(
@@ -38,43 +34,64 @@ def gerar_link_whatsapp(dados_visita):
             reverse=True,
         )
         top_ncs = ncs_ordenadas[:5]
-        ncs_texto = "\n*Principais não conformidades:*\n"
+        ncs_texto = (
+            f"\n{LINHA}\n"
+            f"❌ *NAO CONFORMIDADES*\n"
+            f"{LINHA}\n\n"
+        )
         for nc in top_ncs:
-            ncs_texto += f"  ❌ [{nc['id']}] {nc['texto']} (-{nc['pontos_perdidos']} pts)\n"
+            ncs_texto += f"• [{nc['id']}] {nc['texto']}\n  _(-{nc['pontos_perdidos']} pts)_\n\n"
         if len(ncs_ordenadas) > 5:
-            ncs_texto += f"  ... e mais {len(ncs_ordenadas) - 5} item(ns)\n"
+            ncs_texto += f"_... e mais {len(ncs_ordenadas) - 5} item(ns) no PDF completo_\n"
 
     # Plano de ação (se houver)
     plano_texto = ""
     plano = dados_visita.get("plano_acao", "").strip()
     if plano:
-        plano_texto = f"\n*Plano de Ação:*\n{plano}\n"
+        plano_texto = (
+            f"\n{LINHA}\n"
+            f"📝 *PLANO DE ACAO*\n"
+            f"{LINHA}\n\n"
+            f"{plano}\n"
+        )
 
-    # Montar mensagem completa
+    # Mensagem completa
     mensagem = (
-        f"📋 *Relatório de Visita Técnica*\n"
-        f"RDC 216 - Segurança dos Alimentos\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
+        f"✦ *CAIO COUTO NUTRICIONISTA* ✦\n"
+        f"_Consultoria de Alimentos_\n"
+        f"\n"
+        f"{LINHA}\n"
+        f"📋 *RELATORIO DE VISITA TECNICA*\n"
+        f"_RDC 216 - Seguranca dos Alimentos_\n"
+        f"{LINHA}\n"
         f"\n"
         f"*Unidade:* {dados_visita['unidade']}\n"
         f"*Data:* {dados_visita['data_visita']}\n"
-        f"*Responsável:* {dados_visita['responsavel']}\n"
+        f"*Responsavel:* {dados_visita['responsavel']}\n"
         f"*Nutricionista:* {dados_visita['nutricionista']}\n"
         f"\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"{emoji} *Resultado: {resultado['percentual']}% — {label_cls}*\n"
-        f"{resultado['total_obtido']} de {resultado['total_maximo']} pontos\n"
+        f"{LINHA}\n"
+        f"📊 *RESULTADO GERAL*\n"
+        f"{LINHA}\n"
         f"\n"
-        f"*Pontuação por seção:*\n"
+        f"{emoji} *{resultado['percentual']}% — {label_cls}*\n"
+        f"_{resultado['total_obtido']} de {resultado['total_maximo']} pontos_\n"
+        f"\n"
+        f"{LINHA}\n"
+        f"📋 *PONTUACAO POR SECAO*\n"
+        f"{LINHA}\n"
+        f"\n"
         f"{resumo_secoes}"
         f"{ncs_texto}"
         f"{plano_texto}"
         f"\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"📄 _Segue o PDF do relatório da visita técnica em anexo._\n"
+        f"{LINHA}\n"
+        f"📄 _Segue o PDF do relatorio_\n"
+        f"_da visita tecnica em anexo._\n"
+        f"{LINHA}\n"
         f"\n"
-        f"_Caio Couto Nutricionista_\n"
-        f"_Consultoria de Alimentos_"
+        f"✦ *CAIO COUTO* ✦\n"
+        f"_Nutricionista - Consultoria de Alimentos_"
     )
 
     url = f"https://wa.me/{NUMERO_CAIO}?text={quote(mensagem)}"
