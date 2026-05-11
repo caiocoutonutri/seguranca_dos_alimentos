@@ -9,6 +9,8 @@ from modules.formulario import (
     SECOES,
     OPCOES_RESPOSTA,
     UNIDADES,
+    Responsaveis,
+    Nutricionistas,
     TOTAL_PERGUNTAS,
     TOTAL_PONTOS,
     calcular_pontuacao,
@@ -233,16 +235,16 @@ with col2:
 col3, col4 = st.columns(2)
 
 with col3:
-    responsavel = st.text_input(
+    responsavel = st.selectbox(
         "Responsável Técnico",
-        placeholder="Nome do responsável da unidade",
+        options=Responsaveis,
         help="Nome completo do responsável técnico do restaurante",
     )
 
 with col4:
-    nutricionista = st.text_input(
+    nutricionista = st.selectbox(
         "Nutricionista Avaliador",
-        placeholder="Nome do nutricionista",
+        options=Nutricionistas,
         help="Nome completo do nutricionista que realiza a visita",
     )
 
