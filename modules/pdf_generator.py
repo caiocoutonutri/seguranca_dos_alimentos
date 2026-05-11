@@ -176,42 +176,56 @@ def gerar_pdf(dados_visita):
     pdf.ln(4)
 
     # ══════════════════════════════════════════════
-    # SCORECARD — NOTA GERAL
+    # SCORECARD — DESIGN PREMIUM
     # ══════════════════════════════════════════════
 
-    pdf._section_title("Resultado Geral")
+    y_start = pdf.get_y() + 2
+    box_x = 30
+    box_w = 150
+    box_h = 35
 
-    # Caixa colorida com a nota
-    x_start = 60
-    box_w = 90
-    box_h = 25
-    y_start = pdf.get_y()
+    # Fundo escuro
+    pdf.set_fill_color(*PRETO)
+    pdf.set_draw_color(*PRETO)
+    pdf.rect(box_x, y_start, box_w, box_h, style="DF")
 
-    pdf.set_fill_color(*cor_rgb)
-    pdf.set_draw_color(*cor_rgb)
-    pdf.rect(x_start, y_start, box_w, box_h, style="DF")
+    # Linha dourada no topo
+    pdf.set_draw_color(*DOURADO)
+    pdf.set_line_width(0.8)
+    pdf.line(box_x + 30, y_start, box_x + box_w - 30, y_start)
 
-    # Percentual grande
-    pdf.set_xy(x_start, y_start + 2)
-    pdf.set_font("Helvetica", "B", 22)
+    # "CONFORMIDADE TOTAL" em dourado
+    pdf.set_xy(box_x, y_start + 3)
+    pdf.set_font("Helvetica", "", 7)
+    pdf.set_text_color(*DOURADO)
+    pdf.cell(box_w, 4, "CONFORMIDADE TOTAL", align="C", ln=True)
+
+    # Percentual grande em branco
+    pdf.set_x(box_x)
+    pdf.set_font("Helvetica", "B", 28)
     pdf.set_text_color(*BRANCO)
-    pdf.cell(box_w, 12, f"{resultado['percentual']}%", align="C", ln=True)
+    pdf.cell(box_w, 14, f"{resultado['percentual']}%", align="C", ln=True)
 
-    # Label
-    pdf.set_x(x_start)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.cell(box_w, 8, _safe(label_cls), align="C", ln=True)
+    # Label da classificação com cor do semáforo
+    pdf.set_x(box_x)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(*cor_rgb)
+    pdf.cell(box_w, 5, _safe(label_cls.upper()), align="C", ln=True)
 
-    pdf.set_y(y_start + box_h + 3)
+    # Linha dourada embaixo
+    pdf.set_draw_color(*DOURADO)
+    pdf.line(box_x + 30, y_start + box_h, box_x + box_w - 30, y_start + box_h)
 
-    # Pontuação
-    pdf.set_font("Helvetica", "", 9)
+    pdf.set_y(y_start + box_h + 4)
+
+    # Pontuação em cinza
+    pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(*CINZA)
     pdf.cell(0, 5,
-             f"{resultado['total_obtido']} de {resultado['total_maximo']} pontos  ·  "
-             f"{len(resultado['nao_conformidades'])} não conformidade(s)",
+             _safe(f"{resultado['total_obtido']} de {resultado['total_maximo']} pontos  -  "
+             f"{len(resultado['nao_conformidades'])} nao conformidade(s)"),
              align="C", ln=True)
-    pdf.ln(4)
+    pdf.ln(6)
 
     # ══════════════════════════════════════════════
     # TABELA DE PONTUAÇÃO POR SEÇÃO
