@@ -518,7 +518,7 @@ def renderizar_dashboard(resultado, dados_visita):
                   letter-spacing:3px; text-transform:uppercase; margin:0 0 0.8rem 0;">
             Conformidade Total
         </p>
-        <h2 style="font-family:'Playfair Display',Georgia,serif; color:white;
+        <h2 style="font-family:'Playfair Display',Georgia,serif; color:#C5A55A;
                    font-size:3.5rem; font-weight:700; margin:0; line-height:1;">
             {resultado['percentual']}%
         </h2>
