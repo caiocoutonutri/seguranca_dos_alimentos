@@ -535,6 +535,7 @@ def renderizar_dashboard(resultado, dados_visita):
     </div>
     """, unsafe_allow_html=True)
 
+
     # ── GRÁFICOS EM TABS ──
     tab_radar, tab_barras, tab_tabela, tab_historico = st.tabs([
         "🕸️ Radar", "📊 Barras", "📋 Tabela", "📈 Histórico"
