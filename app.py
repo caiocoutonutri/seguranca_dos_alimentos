@@ -9,8 +9,6 @@ from modules.formulario import (
     SECOES,
     OPCOES_RESPOSTA,
     UNIDADES,
-    Responsaveis,
-    Nutricionistas,
     TOTAL_PERGUNTAS,
     TOTAL_PONTOS,
     calcular_pontuacao,
@@ -46,6 +44,18 @@ st.markdown("""
         --grey: #666666;
         --light-grey: #F0EEEB;
         --white: #FAFAFA;
+    }
+
+    /* FORÇAR cores no scorecard premium (sobrescreve o tema do Streamlit) */
+    .scorecard-premium h2,
+    .scorecard-premium .gold-text {
+        color: #C5A55A !important;
+    }
+    .scorecard-premium .semaforo-text {
+        font-weight: 600 !important;
+    }
+    .scorecard-premium .grey-text {
+        color: #999 !important;
     }
 
     /* Brand header */
@@ -220,20 +230,19 @@ with col2:
         help="Data em que a visita técnica está sendo realizada",
     )
 
-
 col3, col4 = st.columns(2)
 
 with col3:
-    responsavel = st.selectbox(
+    responsavel = st.text_input(
         "Responsável Técnico",
-        options=Responsaveis,
+        placeholder="Nome do responsável da unidade",
         help="Nome completo do responsável técnico do restaurante",
     )
 
 with col4:
-    nutricionista = st.selectbox(
+    nutricionista = st.text_input(
         "Nutricionista Avaliador",
-        options=Nutricionistas,
+        placeholder="Nome do nutricionista",
         help="Nome completo do nutricionista que realiza a visita",
     )
 
