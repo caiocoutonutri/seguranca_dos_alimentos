@@ -362,6 +362,21 @@ perguntas_pendentes = TOTAL_PERGUNTAS - total_respondidas
 if perguntas_pendentes > 0:
     erros.append(f"{perguntas_pendentes} perguntas ainda não respondidas")
 
+    # Listar quais perguntas faltam, por seção
+    pendentes_por_secao = []
+    for secao in SECOES:
+        ids_pendentes = []
+        for p in secao["perguntas"]:
+            if st.session_state.respostas.get(p["id"], "Selecione...") == "Selecione...":
+                ids_pendentes.append(p["id"])
+        if ids_pendentes:
+            pendentes_por_secao.append(f"**{secao['numero']}. {secao['titulo']}:** {', '.join(ids_pendentes)}")
+
+    if pendentes_por_secao:
+        with st.expander(f"📋 Ver {perguntas_pendentes} perguntas pendentes", expanded=False):
+            for linha in pendentes_por_secao:
+                st.markdown(linha)
+
 # Mostrar avisos
 if erros:
     for erro in erros:
