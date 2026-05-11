@@ -522,7 +522,7 @@ def renderizar_dashboard(resultado, dados_visita):
                    font-size:3.5rem; font-weight:700; margin:0; line-height:1;">
             {resultado['percentual']}%
         </h2>
-        <p class="semaforo-text" style="font-family:'Inter',sans-serif; color:{cor} !important;
+        <p style="font-family:'Inter',sans-serif; color:{cor}; font-weight:600;
                   font-size:1rem; margin:0.5rem 0 0 0; letter-spacing:1px;">
             {emoji} {label_cls.upper()}
         </p>
