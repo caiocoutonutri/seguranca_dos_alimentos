@@ -522,9 +522,8 @@ def renderizar_dashboard(resultado, dados_visita):
                    font-size:3.5rem; font-weight:700; margin:0; line-height:1;">
             {resultado['percentual']}%
         </h2>
-        <p class="semaforo-text" style="font-family:'Inter',sans-serif; color:{cor} !important;
-                  font-size:1rem; margin:0.5rem 0 0 0; letter-spacing:1px;">
-            {emoji} {label_cls.upper()}
+        <p style="font-family:'Inter',sans-serif; font-size:1rem; margin:0.5rem 0 0 0; letter-spacing:1px;">
+            <span style="color:{cor} !important; font-weight:700;">{emoji} {label_cls.upper()}</span>
         </p>
         <div style="width:40px; height:2px; background:#C5A55A; margin:0.8rem auto;"></div>
         <p class="grey-text" style="font-family:'Inter',sans-serif; font-size:0.8rem; margin:0;">
