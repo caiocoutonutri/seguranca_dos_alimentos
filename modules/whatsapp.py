@@ -34,7 +34,7 @@ def gerar_link_whatsapp(dados_visita):
             reverse=True,
         )
         top_ncs = ncs_ordenadas[:5]
-        ncs_texto = "\n❌ *NAO CONFORMIDADES:*\n"
+        ncs_texto = "\n*NAO CONFORMIDADES:*\n"
         for nc in top_ncs:
             ncs_texto += f"  ❌ [{nc['id']}] {nc['texto']} (-{nc['pontos_perdidos']} pts)\n"
         if len(ncs_ordenadas) > 5:
