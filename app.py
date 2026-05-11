@@ -414,6 +414,10 @@ if enviar and len(erros) == 0:
     # Salvar no session_state
     st.session_state.dados_visita = dados_visita
 
+    # Salvar no histórico CSV
+    from modules.dashboard import salvar_no_historico
+    salvar_no_historico(dados_visita)
+
     st.success(f"Relatório finalizado! {emoji} **{resultado['percentual']}% — {label_cls}**")
     st.balloons()
 
