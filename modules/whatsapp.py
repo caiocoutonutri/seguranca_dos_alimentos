@@ -8,7 +8,7 @@ from urllib.parse import quote
 NUMERO_CAIO = "5521967100559"
 
 # Separador visual
-LINHA = "━━━━━━━━━━━━━━━━━━"
+LINHA = "━━━━━━━━━━━━━━"
 
 
 def gerar_link_whatsapp(dados_visita):
