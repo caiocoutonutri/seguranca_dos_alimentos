@@ -502,9 +502,6 @@ def renderizar_dashboard(resultado, dados_visita):
     Chamado após o envio do formulário.
     """
 
-    # ── Salvar no histórico ──
-    salvar_no_historico(dados_visita)
-
     emoji, label_cls, cor = resultado["classificacao"]
 
     # ── SCORECARD PREMIUM ──
