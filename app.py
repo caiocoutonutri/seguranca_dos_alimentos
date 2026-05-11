@@ -25,7 +25,7 @@ from modules.whatsapp import gerar_link_whatsapp
 # ──────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Caio Couto Nutricionista - Segurança dos Alimentos",
+    page_title="Checklist Visita Técnica — Mariner",
     page_icon="🍽️",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -37,55 +37,99 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Header */
-    .main-header {
-        text-align: center;
-        padding: 1rem 0 0.5rem 0;
-    }
-    .main-header h1 {
-        font-size: 1.8rem;
-        color: #1B4F72;
-        margin-bottom: 0.2rem;
-    }
-    .main-header p {
-        font-size: 0.95rem;
-        color: #666;
-        margin-top: 0;
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+    /* Brand colors */
+    :root {
+        --gold: #C5A55A;
+        --black: #1C1C1C;
+        --grey: #666666;
+        --light-grey: #F0EEEB;
+        --white: #FAFAFA;
     }
 
-    /* Seção conformidade badge */
-    .badge-excelente { background: #1a5e1a; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; }
-    .badge-bom { background: #27ae60; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; }
-    .badge-atencao { background: #f39c12; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; }
-    .badge-critico { background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; }
-
-    /* Scorecard grande */
-    .scorecard {
+    /* Brand header */
+    .brand-header {
         text-align: center;
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
+        padding: 2rem 0 1rem 0;
     }
-    .scorecard h2 {
-        font-size: 3rem;
+    .brand-header img {
+        width: 80px;
+        margin-bottom: 0.5rem;
+    }
+    .brand-header h1 {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: #1C1C1C;
+        letter-spacing: 1px;
+        margin: 0.5rem 0 0.2rem 0;
+    }
+    .brand-header .subtitle {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8rem;
+        color: #999;
+        letter-spacing: 2px;
+        text-transform: uppercase;
         margin: 0;
     }
-    .scorecard p {
-        font-size: 1.1rem;
-        margin: 0.3rem 0 0 0;
+    .gold-line {
+        width: 60px;
+        height: 2px;
+        background: #C5A55A;
+        margin: 0.8rem auto;
+        border: none;
     }
 
-    /* Separador fino */
+    /* Section headers */
+    .stSubheader, h2, h3 {
+        font-family: 'Playfair Display', Georgia, serif !important;
+        color: #1C1C1C !important;
+    }
+
+    /* Separador dourado */
     .section-divider {
         border: none;
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid #E8E0D0;
         margin: 1.5rem 0;
     }
 
-    /* Ajustar expanders */
+    /* Expanders refinados */
     .streamlit-expanderHeader {
-        font-size: 1.05rem;
-        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    /* Botões com estilo gold */
+    .stButton > button[kind="primary"] {
+        background-color: #C5A55A !important;
+        border-color: #C5A55A !important;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.5px;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #B0913F !important;
+        border-color: #B0913F !important;
+    }
+
+    /* Segmented control refinado */
+    .stSegmentedControl {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Footer */
+    .brand-footer {
+        text-align: center;
+        padding: 1rem 0;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        color: #999;
+        letter-spacing: 0.5px;
+    }
+    .brand-footer .gold-line {
+        width: 40px;
+        margin: 0.5rem auto;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -106,13 +150,26 @@ if "enviado" not in st.session_state:
 
 
 # ──────────────────────────────────────────────────
-# HEADER
+# HEADER COM LOGO DA MARCA
 # ──────────────────────────────────────────────────
 
-st.markdown("""
-<div class="main-header">
-    <h1>🍽️ Checklist de Visita Técnica</h1>
-    <p>RDC 216 · Segurança dos Alimentos · Consultoria Mariner</p>
+import base64
+import os
+
+logo_path = os.path.join("assets", "Logo-CC.PNG")
+if os.path.exists(logo_path):
+    with open(logo_path, "rb") as f:
+        logo_b64 = base64.b64encode(f.read()).decode()
+    logo_html = f'<img src="data:image/png;base64,{logo_b64}" alt="Caio Couto">'
+else:
+    logo_html = ""
+
+st.markdown(f"""
+<div class="brand-header">
+    {logo_html}
+    <h1>Checklist de Visita Tecnica</h1>
+    <div class="gold-line"></div>
+    <p class="subtitle">RDC 216 &middot; Seguranca dos Alimentos</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -405,8 +462,10 @@ with col_limpar2:
 # ──────────────────────────────────────────────────
 
 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-st.caption(
-    "Consultoria de Alimentos by Caio Couto · "
-    "Baseado na RDC nº 216/2004 — ANVISA · "
-    "Regulamento Técnico de Boas Práticas para Serviços de Alimentação"
-)
+st.markdown("""
+<div class="brand-footer">
+    <div class="gold-line"></div>
+    CAIO COUTO NUTRICIONISTA<br>
+    Consultoria de Alimentos &middot; RDC 216/2004 &mdash; ANVISA
+</div>
+""", unsafe_allow_html=True)
