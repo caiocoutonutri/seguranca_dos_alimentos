@@ -416,8 +416,11 @@ if enviar and len(erros) == 0:
 
     # Salvar no histórico CSV
     from modules.dashboard import salvar_no_historico
-    salvar_no_historico(dados_visita)
-
+    try:
+        salvar_no_historico(dados_visita)
+        st.toast("✅ Visita salva no histórico!", icon="💾")
+    except Exception as e:
+        st.error(f"❌ Erro ao salvar no histórico: {e}")
     st.success(f"Relatório finalizado! {emoji} **{resultado['percentual']}% — {label_cls}**")
     st.balloons()
 
