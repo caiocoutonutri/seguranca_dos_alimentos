@@ -231,7 +231,6 @@ def salvar_no_historico(dados_visita):
 
     resultado = dados_visita["resultado"]
 
-    # Montar linha base
     linha = {
         "unidade": dados_visita["unidade"],
         "data_visita": dados_visita["data_visita"],
@@ -241,46 +240,29 @@ def salvar_no_historico(dados_visita):
         "percentual_geral": resultado["percentual"],
         "total_obtido": resultado["total_obtido"],
         "total_maximo": resultado["total_maximo"],
-        "classificacao": resultado["classificacao"][1],  # label: Excelente/Bom/Atenção/Crítico
+        "classificacao": resultado["classificacao"][1],
         "nao_conformidades_qtd": len(resultado["nao_conformidades"]),
     }
 
-    # Adicionar % de cada seção
     for sec in resultado["secoes"]:
         col = f"secao_{sec['numero']}_pct"
         linha[col] = sec["percentual"]
 
     df_novo = pd.DataFrame([linha])
 
-    # Append ao CSV existente ou criar novo
+    existe_valido = False
     if os.path.exists(HISTORICO_PATH):
-        # Verificar se o arquivo tem header válido
         try:
-            with open(HISTORICO_PATH, "r", encoding="utf-8-sig") as f:
-                primeira_linha = f.readline().strip()
-            tem_header = primeira_linha.startswith("unidade,")
+            tamanho = os.path.getsize(HISTORICO_PATH)
+            if tamanho > 10:
+                df_check = pd.read_csv(HISTORICO_PATH, encoding="utf-8-sig", nrows=0)
+                if "unidade" in df_check.columns:
+                    existe_valido = True
         except Exception:
-            tem_header = False
+            existe_valido = False
 
-        if tem_header:
-            df_novo.to_csv(HISTORICO_PATH, mode="a", header=False, index=False, encoding="utf-8-sig")
-        else:
-            # Arquivo existe mas sem header — reescrever com header
-            try:
-                # Número de colunas que o formulário atual gera
-                n_cols = len(COLUNAS_CSV)
-                df_existente = pd.read_csv(HISTORICO_PATH, header=None, encoding="utf-8-sig")
-                # Só atribui nomes se o número de colunas bate
-                if len(df_existente.columns) == n_cols:
-                    df_existente.columns = COLUNAS_CSV
-                    df_completo = pd.concat([df_existente, df_novo], ignore_index=True)
-                else:
-                    # Colunas não batem (seções alteradas) — salvar só o novo
-                    df_completo = df_novo
-                df_completo.to_csv(HISTORICO_PATH, mode="w", header=True, index=False, encoding="utf-8-sig")
-            except Exception:
-                # Fallback: sobrescrever com dados novos
-                df_novo.to_csv(HISTORICO_PATH, mode="w", header=True, index=False, encoding="utf-8-sig")
+    if existe_valido:
+        df_novo.to_csv(HISTORICO_PATH, mode="a", header=False, index=False, encoding="utf-8-sig")
     else:
         df_novo.to_csv(HISTORICO_PATH, mode="w", header=True, index=False, encoding="utf-8-sig")
 
