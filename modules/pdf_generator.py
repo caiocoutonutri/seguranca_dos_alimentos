@@ -200,10 +200,10 @@ def gerar_pdf(dados_visita):
     pdf.set_text_color(*DOURADO)
     pdf.cell(box_w, 4, "CONFORMIDADE TOTAL", align="C", ln=True)
 
-    # Percentual grande em branco
+    # Percentual grande em dourado
     pdf.set_x(box_x)
     pdf.set_font("Helvetica", "B", 28)
-    pdf.set_text_color(*BRANCO)
+    pdf.set_text_color(*DOURADO)
     pdf.cell(box_w, 14, f"{resultado['percentual']}%", align="C", ln=True)
 
     # Label da classificação com cor do semáforo
