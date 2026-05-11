@@ -34,15 +34,12 @@ def gerar_link_whatsapp(dados_visita):
             reverse=True,
         )
         top_ncs = ncs_ordenadas[:5]
-        ncs_texto = (
-            f"\n{LINHA}\n"
-            f"❌ *NAO CONFORMIDADES*\n"
-            f"{LINHA}\n\n"
-        )
+        ncs_texto = "\n❌ *NAO CONFORMIDADES:*\n"
         for nc in top_ncs:
-            ncs_texto += f"• [{nc['id']}] {nc['texto']}\n  _(-{nc['pontos_perdidos']} pts)_\n\n"
+            ncs_texto += f"  ❌ [{nc['id']}] {nc['texto']} (-{nc['pontos_perdidos']} pts)\n"
         if len(ncs_ordenadas) > 5:
-            ncs_texto += f"_... e mais {len(ncs_ordenadas) - 5} item(ns) no PDF completo_\n"
+            ncs_texto += f"  ... e mais {len(ncs_ordenadas) - 5} item(ns) no PDF completo\n"
+
 
     # Plano de ação (se houver)
     plano_texto = ""
