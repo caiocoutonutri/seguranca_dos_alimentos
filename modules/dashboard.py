@@ -509,32 +509,31 @@ def renderizar_dashboard(resultado, dados_visita):
 
     # ── SCORECARD PREMIUM ──
     st.markdown(f"""
-    <div style="text-align:center; padding:2.5rem 2rem; margin:1rem 0;
+    <div class="scorecard-premium" style="text-align:center; padding:2.5rem 2rem; margin:1rem 0;
                 background: linear-gradient(135deg, #1C1C1C 0%, #2D2D2D 100%);
                 border-radius: 16px; position:relative; overflow:hidden;">
         <div style="position:absolute; top:0; left:0; right:0; height:3px;
                     background: linear-gradient(90deg, transparent, #C5A55A, transparent);"></div>
-        <p style="font-family:'Inter',sans-serif; font-size:0.75rem; color:#C5A55A;
+        <p class="gold-text" style="font-family:'Inter',sans-serif; font-size:0.75rem;
                   letter-spacing:3px; text-transform:uppercase; margin:0 0 0.8rem 0;">
             Conformidade Total
         </p>
-        <h2 style="font-family:'Playfair Display',Georgia,serif; color:#C5A55A;
+        <h2 style="font-family:'Playfair Display',Georgia,serif;
                    font-size:3.5rem; font-weight:700; margin:0; line-height:1;">
             {resultado['percentual']}%
         </h2>
-        <p style="font-family:'Inter',sans-serif; color:{cor}; font-weight:600;
+        <p class="semaforo-text" style="font-family:'Inter',sans-serif; color:{cor} !important;
                   font-size:1rem; margin:0.5rem 0 0 0; letter-spacing:1px;">
             {emoji} {label_cls.upper()}
         </p>
         <div style="width:40px; height:2px; background:#C5A55A; margin:0.8rem auto;"></div>
-        <p style="font-family:'Inter',sans-serif; color:#999; font-size:0.8rem; margin:0;">
+        <p class="grey-text" style="font-family:'Inter',sans-serif; font-size:0.8rem; margin:0;">
             {resultado['total_obtido']} de {resultado['total_maximo']} pontos
         </p>
         <div style="position:absolute; bottom:0; left:0; right:0; height:3px;
                     background: linear-gradient(90deg, transparent, #C5A55A, transparent);"></div>
     </div>
     """, unsafe_allow_html=True)
-
 
     # ── GRÁFICOS EM TABS ──
     tab_radar, tab_barras, tab_tabela, tab_historico = st.tabs([
