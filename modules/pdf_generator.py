@@ -393,7 +393,7 @@ def gerar_pdf(dados_visita):
             if obs:
                 pdf.set_font("Helvetica", "I", 7)
                 pdf.set_text_color(*CINZA)
-                pdf.cell(12, 4, "", ln=False)
+                pdf.set_x(pdf.l_margin + 12)
                 pdf.multi_cell(0, 4, _safe(f"Obs: {obs}"))
 
             pdf.ln(1)
