@@ -267,7 +267,7 @@ for secao in SECOES:
     # Label simples — sem cálculo em tempo real para não fechar o expander
     label = f"{num}. {titulo}  ·  {len(perguntas)} perguntas  ·  {pts_max} pts"
 
-    with st.expander(label, expanded=(num <= 3)):
+    with st.expander(label, expanded=(False)):
         # Perguntas
         for pergunta in perguntas:
             pid = pergunta["id"]
