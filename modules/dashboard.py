@@ -9,7 +9,9 @@ import plotly.express as px
 from modules.formulario import classificar_nota, SECOES
 import os
 from datetime import datetime
-
+import requests
+import base64
+from io import StringIO
 
 # ──────────────────────────────────────────────────
 # CORES DO TEMA
@@ -224,9 +226,88 @@ _COLUNAS_SECOES = [f"secao_{s['numero']}_pct" for s in SECOES]
 
 COLUNAS_CSV = _COLUNAS_BASE + _COLUNAS_SECOES
 
+def _obter_config_github():
+    token = st.secrets.get("TOKEN_GITHUB", "")
+    usuario = st.secrets.get("GITHUB_USER", "caiocoutonutri")
+    repositorio = st.secrets.get("GITHUB_REPO", "seguranca_dos_alimentos")
+    branch = st.secrets.get("GITHUB_BRANCH", "main")
+    return token, usuario, repositorio, branch
+
+def carregar_historico_do_github():
+    token, usuario, repositorio, branch = _obter_config_github()
+
+    if not token:
+        return None, None
+
+    caminho = "data/historico_visitas.csv"
+    url = f"https://api.github.com/repos/{usuario}/{repositorio}/contents/{caminho}"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    response_get = requests.get(url, headers=headers, params={"ref": branch})
+
+    if response_get.status_code == 404:
+        return pd.DataFrame(columns=COLUNAS_CSV), None
+
+    if response_get.status_code != 200:
+        st.warning(f"Não foi possível carregar histórico do GitHub: {response_get.status_code} - {response_get.text}")
+        return None, None
+
+    dados = response_get.json()
+    sha = dados.get("sha")
+    conteudo_b64 = dados.get("content", "")
+    conteudo_csv = base64.b64decode(conteudo_b64).decode("utf-8-sig")
+
+    if not conteudo_csv.strip():
+        return pd.DataFrame(columns=COLUNAS_CSV), sha
+
+    df = pd.read_csv(StringIO(conteudo_csv), encoding="utf-8-sig")
+    return df, sha
+
+
+def atualizar_historico_no_github(df_historico, sha=None):
+    token, usuario, repositorio, branch = _obter_config_github()
+
+    if not token:
+        st.warning("Histórico salvo localmente, mas TOKEN_GITHUB não está configurado no Streamlit secrets.")
+        return False
+
+    caminho = "data/historico_visitas.csv"
+    url = f"https://api.github.com/repos/{usuario}/{repositorio}/contents/{caminho}"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    buffer = StringIO()
+    df_historico.to_csv(buffer, index=False, encoding="utf-8-sig")
+    conteudo_csv = buffer.getvalue()
+    conteudo_b64 = base64.b64encode(conteudo_csv.encode("utf-8-sig")).decode("utf-8")
+
+    payload = {
+        "message": "Atualiza historico_visitas.csv via Streamlit",
+        "content": conteudo_b64,
+        "branch": branch,
+    }
+
+    if sha:
+        payload["sha"] = sha
+
+    response_put = requests.put(url, headers=headers, json=payload)
+
+    if response_put.status_code not in (200, 201):
+        st.warning(f"Histórico salvo localmente, mas falhou ao atualizar GitHub: {response_put.status_code} - {response_put.text}")
+        return False
+
+    return True
+
 
 def salvar_no_historico(dados_visita):
-    """Salva a visita como uma nova linha no CSV de histórico."""
+    """Salva a visita no CSV local e tenta persistir o histórico no GitHub."""
     os.makedirs("data", exist_ok=True)
 
     resultado = dados_visita["resultado"]
@@ -250,24 +331,33 @@ def salvar_no_historico(dados_visita):
 
     df_novo = pd.DataFrame([linha])
 
-    existe_valido = False
-    if os.path.exists(HISTORICO_PATH):
-        try:
-            tamanho = os.path.getsize(HISTORICO_PATH)
-            if tamanho > 10:
-                df_check = pd.read_csv(HISTORICO_PATH, encoding="utf-8-sig", nrows=0)
-                if "unidade" in df_check.columns:
-                    existe_valido = True
-        except Exception:
-            existe_valido = False
+    df_atual_github, sha = carregar_historico_do_github()
 
-    if existe_valido:
-        df_novo.to_csv(HISTORICO_PATH, mode="a", header=False, index=False, encoding="utf-8-sig")
+    if df_atual_github is not None:
+        df_atual = df_atual_github
     else:
-        df_novo.to_csv(HISTORICO_PATH, mode="w", header=True, index=False, encoding="utf-8-sig")
+        if os.path.exists(HISTORICO_PATH) and os.path.getsize(HISTORICO_PATH) > 10:
+            try:
+                df_atual = pd.read_csv(HISTORICO_PATH, encoding="utf-8-sig")
+            except Exception:
+                df_atual = pd.DataFrame(columns=COLUNAS_CSV)
+        else:
+            df_atual = pd.DataFrame(columns=COLUNAS_CSV)
+        sha = None
+
+    df_historico = pd.concat([df_atual, df_novo], ignore_index=True)
+
+    for col in COLUNAS_CSV:
+        if col not in df_historico.columns:
+            df_historico[col] = None
+
+    df_historico = df_historico[COLUNAS_CSV]
+
+    df_historico.to_csv(HISTORICO_PATH, index=False, encoding="utf-8-sig")
+
+    atualizar_historico_no_github(df_historico, sha=sha)
 
     return linha
-
 
 def carregar_historico():
     """
