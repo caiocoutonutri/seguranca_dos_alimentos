@@ -355,9 +355,12 @@ def salvar_no_historico(dados_visita):
 
     df_historico.to_csv(HISTORICO_PATH, index=False, encoding="utf-8-sig")
 
-    atualizar_historico_no_github(df_historico, sha=sha)
+    github_ok = atualizar_historico_no_github(df_historico, sha=sha)
 
-    return linha
+    return {
+        "linha": linha,
+        "github_ok": github_ok,
+    }
 
 def carregar_historico():
     """
