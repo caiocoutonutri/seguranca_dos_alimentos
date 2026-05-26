@@ -227,7 +227,7 @@ _COLUNAS_SECOES = [f"secao_{s['numero']}_pct" for s in SECOES]
 COLUNAS_CSV = _COLUNAS_BASE + _COLUNAS_SECOES
 
 def _obter_config_github():
-    token = st.secrets.get("TOKEN_GITHUB", "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")
+    token = st.secrets.get("TOKEN_GITHUB", "")
     usuario = st.secrets.get("GITHUB_USER", "caiocoutonutri")
     repositorio = st.secrets.get("GITHUB_REPO", "seguranca_dos_alimentos")
     branch = st.secrets.get("GITHUB_BRANCH", "main")
