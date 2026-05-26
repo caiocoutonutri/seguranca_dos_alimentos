@@ -417,10 +417,14 @@ if enviar and len(erros) == 0:
     # Salvar no histórico CSV
     from modules.dashboard import salvar_no_historico
     try:
-        salvar_no_historico(dados_visita)
-        st.toast("✅ Visita salva no histórico!", icon="💾")
+        retorno_salvamento = salvar_no_historico(dados_visita)
+    
+        if retorno_salvamento.get("github_ok"):
+            st.success("✅ Visita salva no histórico e enviada para o GitHub!")
+        else:
+            st.error("❌ Visita salva localmente, mas NÃO foi enviada para o GitHub. Verifique TOKEN_GITHUB e permissões.")
     except Exception as e:
-        st.error(f"❌ Erro ao salvar no histórico: {e}")
+        st.error(f"❌ Erro ao salvar no histórico: {e}")   
     st.success(f"Relatório finalizado! {emoji} **{resultado['percentual']}% — {label_cls}**")
     st.balloons()
 
