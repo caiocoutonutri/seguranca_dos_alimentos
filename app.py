@@ -352,8 +352,8 @@ erros = []
 if unidade == "Selecione a unidade...":
     erros.append("Selecione a unidade do restaurante")
 
-if not responsavel.strip():
-    erros.append("Preencha o nome do Responsável Técnico")
+if responsavel == "Selecione o responsável...":
+        erros.append("Selecione o responsável técnico do restaurante")
 
 if not nutricionista.strip():
     erros.append("Preencha o nome do Nutricionista Avaliador")
