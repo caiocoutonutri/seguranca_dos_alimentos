@@ -258,43 +258,98 @@ st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 st.subheader("📝 Avaliação por Seção")
 st.caption(f"{len(SECOES)} seções · {TOTAL_PERGUNTAS} perguntas · {TOTAL_PONTOS} pontos possíveis")
 
+# Opções do controle de conformidade
+OPCOES_SEGMENTED = ["✅ Conforme", "❌ Não Conforme", "➖ N/A"]
+
+MAPA_SEGMENTED = {
+    "✅ Conforme": "Conforme",
+    "❌ Não Conforme": "Não Conforme",
+    "➖ N/A": "Não Aplicável",
+}
+
+MAPA_REVERSO = {v: k for k, v in MAPA_SEGMENTED.items()}
+
+
+def aplicar_resposta_em_secao(perguntas, resposta_formulario):
+    """
+    Aplica a mesma resposta em todas as perguntas de uma seção.
+
+    Atualiza:
+    - st.session_state.respostas, usado no cálculo final;
+    - st.session_state["resp_<id>"], usado visualmente pelo segmented_control.
+    """
+    resposta_segmented = MAPA_REVERSO[resposta_formulario]
+
+    for pergunta in perguntas:
+        pid = pergunta["id"]
+        st.session_state.respostas[pid] = resposta_formulario
+        st.session_state[f"resp_{pid}"] = resposta_segmented
+
+
 for secao in SECOES:
     num = secao["numero"]
     titulo = secao["titulo"]
     pts_max = secao["pontuacao_maxima"]
     perguntas = secao["perguntas"]
 
-    # Label simples — sem cálculo em tempo real para não fechar o expander
-    label = f"{num}. {titulo}  ·  {len(perguntas)} perguntas  ·  {pts_max} pts"
 
-    with st.expander(label, expanded=(False)):
+    label = f"{num}. {titulo} · {len(perguntas)} perguntas · {pts_max} pts"
+
+    with st.expander(label, expanded=False):
+
+        col_conforme, col_nao_conforme, col_na, col_espaco = st.columns(
+            [1, 1, 1,6]
+        )
+
+        with col_conforme:
+            if st.button(
+                "✅",
+                key=f"bulk_conforme_{num}",
+                use_container_width=True,
+            ):
+                aplicar_resposta_em_secao(perguntas, "Conforme")
+                st.rerun()
+
+        with col_nao_conforme:
+            if st.button(
+                "❌",
+                key=f"bulk_nao_conforme_{num}",
+                use_container_width=True,
+            ):
+                aplicar_resposta_em_secao(perguntas, "Não Conforme")
+                st.rerun()
+
+        with col_na:
+            if st.button(
+                "➖",
+                key=f"bulk_na_{num}",
+                use_container_width=True,
+            ):
+                aplicar_resposta_em_secao(perguntas, "Não Aplicável")
+                st.rerun()
+
+        st.markdown("---")
+
         # Perguntas
         for pergunta in perguntas:
             pid = pergunta["id"]
             texto = pergunta["texto"]
             pontos = pergunta["pontos"]
+            widget_key = f"resp_{pid}"
 
             # Linha da pergunta com peso
             st.markdown(f"**{pid}** — {texto}  `({pontos} pts)`")
 
-            # Segmented control — opções sem o "Selecione..."
-            OPCOES_SEGMENTED = ["✅ Conforme", "❌ Não Conforme", "➖ N/A"]
-            MAPA_SEGMENTED = {
-                "✅ Conforme": "Conforme",
-                "❌ Não Conforme": "Não Conforme",
-                "➖ N/A": "Não Aplicável",
-            }
-            MAPA_REVERSO = {v: k for k, v in MAPA_SEGMENTED.items()}
-
-            # Recuperar valor atual do session_state
+            # Sincroniza valor salvo com o widget visual
             resp_atual = st.session_state.respostas.get(pid, None)
-            default_val = MAPA_REVERSO.get(resp_atual, None)
+
+            if widget_key not in st.session_state:
+                st.session_state[widget_key] = MAPA_REVERSO.get(resp_atual, None)
 
             resposta_seg = st.segmented_control(
                 "Conformidade",
                 options=OPCOES_SEGMENTED,
-                default=default_val,
-                key=f"resp_{pid}",
+                key=widget_key,
                 label_visibility="collapsed",
             )
 
@@ -303,14 +358,14 @@ for secao in SECOES:
                 st.session_state.respostas[pid] = MAPA_SEGMENTED[resposta_seg]
             else:
                 # Nenhuma opção selecionada ainda
-                st.session_state.respostas[pid] = "Selecione..."
+                st.session_state.respostas[pid] = "Selecione."
 
             # Observação inline
             obs_atual = st.session_state.observacoes.get(pid, "")
             obs = st.text_input(
                 "Observação",
                 value=obs_atual,
-                placeholder="Observação (opcional)...",
+                placeholder="Observação (opcional).",
                 key=f"obs_{pid}",
                 label_visibility="collapsed",
             )
@@ -324,12 +379,11 @@ for secao in SECOES:
         obs_secao = st.text_area(
             f"Observação geral — {titulo}",
             value=obs_secao_atual,
-            placeholder="Observações adicionais sobre esta seção...",
+            placeholder="Observações adicionais sobre esta seção.",
             key=f"obs_geral_{num}",
             height=80,
         )
         st.session_state.observacoes[obs_secao_key] = obs_secao
-
 
 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 
@@ -461,7 +515,7 @@ if st.session_state.enviado and "dados_visita" in st.session_state:
     if st.button("🔄  Gerar PDF", key="btn_gerar_pdf"):
         dados_visita_pdf = dict(dados_visita)
         dados_visita_pdf["plano_acao"] = plano_acao.strip() if plano_acao else ""
-        st.session_state.pdf_bytes = bytes(gerar_pdf(dados_visita_pdf))
+        st.session_state.pdf_bytes = gerar_pdf(dados_visita_pdf)
         st.session_state.pdf_nome = (
             f"relatorio_{dados_visita['unidade'].replace(' ', '_')}"
             f"_{dados_visita['data_visita'].replace('/', '')}.pdf"
