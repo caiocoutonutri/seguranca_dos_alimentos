@@ -283,8 +283,9 @@ def gerar_pdf(dados_visita):
     pdf.set_text_color(*PRETO)
     pdf.ln(12)
 
+
     # ══════════════════════════════════════════════
-    # GRÁFICO DE EVOLUÇÃO (últimas 10 visitas)
+    # EVOLUÇÃO HISTÓRICA POR UNIDADE (últimas 10 visitas)
     # ══════════════════════════════════════════════
 
     try:
@@ -292,76 +293,265 @@ def gerar_pdf(dados_visita):
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        import matplotlib.ticker as mticker
         import tempfile
+        import pandas as pd_hist
 
         historico = carregar_historico()
-        unidade_atual = dados_visita.get("unidade", "")
 
-        # Filtrar pela unidade atual e pegar as últimas 10
-        hist_unidade = [h for h in historico if h.get("unidade") == unidade_atual]
+        if historico:
+            df_hist = pd_hist.DataFrame(historico)
 
-        if len(hist_unidade) >= 2:
-            import pandas as pd_hist
-            df_hist = pd_hist.DataFrame(hist_unidade)
-            df_hist["data_dt"] = pd_hist.to_datetime(df_hist["data_visita"], format="%d/%m/%Y", errors="coerce")
-            df_hist = df_hist.sort_values("data_dt").tail(10)
-            df_hist = df_hist.reset_index(drop=True)
+            df_hist["data_dt"] = pd_hist.to_datetime(
+                df_hist["data_visita"],
+                format="%d/%m/%Y",
+                errors="coerce",
+            )
 
-            datas = df_hist["data_visita"].tolist()
-            valores = df_hist["percentual_geral"].tolist()
-            x_pos = list(range(len(datas)))
+            df_hist["percentual_geral"] = pd_hist.to_numeric(
+                df_hist["percentual_geral"],
+                errors="coerce",
+            )
 
-            fig_mpl, ax = plt.subplots(figsize=(10, 4), dpi=120)
+            df_hist = df_hist.dropna(subset=["data_dt", "percentual_geral", "unidade"])
 
-            # Linha principal
-            ax.plot(x_pos, valores, color="#1B4F72", linewidth=2, marker="o", markersize=7, zorder=5)
+            df_hist["unidade_label"] = (
+                df_hist["unidade"]
+                .astype(str)
+                .str.replace("Mariner — ", "", regex=False)
+            )
 
-            # Labels nos pontos
-            for i, (x, v) in enumerate(zip(x_pos, valores)):
-                ax.annotate(f"{v:.0f}%", (x, v), textcoords="offset points", xytext=(0, 12),
-                            ha="center", fontsize=8, color="#1B4F72", fontweight="bold")
+            df_hist = (
+                df_hist.sort_values(["unidade_label", "data_dt"])
+                    .groupby("unidade_label", group_keys=False)
+                    .tail(10)
+                    .reset_index(drop=True)
+            )
 
-            # Faixas de referência
-            ax.axhline(y=90, color="#1a5e1a", linestyle="--", linewidth=0.8, alpha=0.7, label="Excelente (90%)")
-            ax.axhline(y=80, color="#27ae60", linestyle="--", linewidth=0.8, alpha=0.7, label="Bom (80%)")
-            ax.axhline(y=70, color="#f39c12", linestyle="--", linewidth=0.8, alpha=0.7, label="Atencao (70%)")
+            unidades = df_hist["unidade_label"].dropna().unique().tolist()
 
-            ax.set_ylim(0, 110)
-            ax.set_ylabel("Conformidade (%)", fontsize=9)
-            ax.set_xlabel("Data da Visita", fontsize=9)
-            ax.set_xticks(x_pos)
-            ax.set_xticklabels(datas, rotation=45, ha="right", fontsize=7)
-            ax.tick_params(axis="y", labelsize=8)
-            ax.grid(axis="y", alpha=0.3)
-            ax.spines["top"].set_visible(False)
-            ax.spines["right"].set_visible(False)
-            ax.legend(fontsize=7, loc="lower right")
+            if len(unidades) >= 1:
+                cores = ["#1B4F72", "#27ae60", "#f39c12", "#e74c3c", "#3498db"]
 
-            fig_mpl.subplots_adjust(left=0.08, right=0.95, top=0.92, bottom=0.22)
+                fig_mpl, axes = plt.subplots(
+                    nrows=len(unidades),
+                    ncols=1,
+                    figsize=(10, max(2.0, len(unidades) * 1.65)),
+                    dpi=130,
+                    sharex=True,
+                )
 
-            # Salvar como PNG temporário
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                fig_mpl.savefig(tmp.name, format="png", bbox_inches="tight")
-                tmp_path = tmp.name
-            plt.close(fig_mpl)
+                if len(unidades) == 1:
+                    axes = [axes]
 
-            # Nova página se necessário
-            if pdf.get_y() > 160:
-                pdf.add_page()
 
-            pdf._section_title(_safe(f"Evolucao - {unidade_atual} (ultimas {len(df_hist)} visitas)"))
+                # Eixo X global: todas as datas existentes no histórico limitado às últimas 10 por unidade
+                datas_globais_dt = (
+                    df_hist["data_dt"]
+                    .drop_duplicates()
+                    .sort_values()
+                    .tolist()
+                )
 
-            # Centralizar imagem
-            img_w = 170
-            img_x = (210 - img_w) / 2
-            pdf.image(tmp_path, x=img_x, y=pdf.get_y(), w=img_w)
-            pdf.ln(75)
+                datas_globais = [
+                    data.strftime("%d/%m/%Y")
+                    for data in datas_globais_dt
+                ]
 
-            os.remove(tmp_path)
+                mapa_x = {
+                    data.strftime("%d/%m/%Y"): pos
+                    for pos, data in enumerate(datas_globais_dt)
+                }
 
-    except Exception:
-        pass  # Se falhar, pula silenciosamente
+                x_ticks = list(range(len(datas_globais)))
+
+                for idx, unidade in enumerate(unidades):
+                    ax = axes[idx]
+                    df_u = df_hist[df_hist["unidade_label"] == unidade].copy()
+
+                    datas = df_u["data_dt"].dt.strftime("%d/%m/%Y").tolist()
+                    valores = df_u["percentual_geral"].tolist()
+                    cor = cores[idx % len(cores)]
+                    x_pos = [mapa_x[data] for data in datas]
+
+                    ax.plot(
+                        x_pos,
+                        valores,
+                        color=cor,
+                        linewidth=2,
+                        marker="o",
+                        markersize=5,
+                        zorder=5,
+                    )
+
+                    for x, v in zip(x_pos, valores):
+                        ax.annotate(
+                            f"{v:.0f}%",
+                            (x, v),
+                            textcoords="offset points",
+                            xytext=(0, 7),
+                            ha="center",
+                            fontsize=7,
+                            color=cor,
+                            fontweight="bold",
+                        )
+
+                    # Faixas de referência
+                    ax.axhline(y=90, color="#1a5e1a", linestyle="--", linewidth=0.7, alpha=0.6)
+                    ax.axhline(y=80, color="#27ae60", linestyle="--", linewidth=0.7, alpha=0.5)
+                    ax.axhline(y=70, color="#f39c12", linestyle="--", linewidth=0.7, alpha=0.5)
+
+                    y_min = max(0, min(valores) - 5)
+                    y_max = min(105, max(valores) + 5)
+
+                    if y_max - y_min < 10:
+                        y_min = max(0, y_min - 5)
+                        y_max = min(105, y_max + 5)
+
+                    ax.set_ylim(y_min, y_max)
+                    ax.set_title(unidade, fontsize=10, fontweight="bold", color="#666666", pad=8)
+                    ax.set_ylabel("%", fontsize=8)
+                    ax.tick_params(axis="y", labelsize=7)
+                    ax.grid(axis="y", alpha=0.25)
+                    ax.spines["top"].set_visible(False)
+                    ax.spines["right"].set_visible(False)
+
+                    # Mesmo eixo X para todos, mas datas visíveis só no último gráfico
+                    ax.set_xlim(-0.5, len(datas_globais) - 0.5)
+
+                    if idx < len(unidades) - 1:
+                        ax.tick_params(axis="x", labelbottom=False)
+                        ax.set_xlabel("")
+                    else:
+                        ax.set_xticks(x_ticks)
+                        ax.set_xticklabels(datas_globais, rotation=45, ha="right", fontsize=7)
+                        ax.set_xlabel("Data da Visita", fontsize=8)
+
+                fig_mpl.subplots_adjust(
+                    left=0.08,
+                    right=0.96,
+                    top=0.95,
+                    bottom=0.14,
+                    hspace=0.55,
+                )
+
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                    fig_mpl.savefig(tmp.name, format="png", bbox_inches="tight")
+                    tmp_path = tmp.name
+
+                plt.close(fig_mpl)
+
+                if pdf.get_y() > 120:
+                    pdf.add_page()
+
+                pdf._section_title("Evolucao Historica por Unidade - ultimas 10 visitas")
+
+                img_w = 175
+                img_x = (210 - img_w) / 2
+
+                y_inicio = pdf.get_y()
+
+                pdf.image(tmp_path, x=img_x, y=y_inicio, w=img_w)
+
+                # altura REAL ocupada pela imagem
+                altura_img = img_w * (fig_mpl.get_figheight() / fig_mpl.get_figwidth())
+
+                pdf.set_y(y_inicio + altura_img + 4)
+
+
+                os.remove(tmp_path)
+
+                # ══════════════════════════════════════════════
+                # MÉDIA HISTÓRICA POR UNIDADE
+                # ══════════════════════════════════════════════
+
+                df_media = (
+                    df_hist.groupby("unidade_label", as_index=False)
+                    .agg(
+                        media_percentual=("percentual_geral", "mean"),
+                        qtd_visitas=("percentual_geral", "count"),
+                    )
+                )
+
+                df_media["media_percentual"] = df_media["media_percentual"].round(1)
+
+                # Manter a mesma lógica de cores do gráfico de linhas
+                mapa_cores = {
+                    unidade: cores[idx % len(cores)]
+                    for idx, unidade in enumerate(unidades)
+                }
+
+                df_media["cor"] = df_media["unidade_label"].map(mapa_cores)
+
+                # Ordena para leitura em ranking no gráfico horizontal
+                df_media = df_media.sort_values("media_percentual", ascending=True)
+
+                fig_bar, ax_bar = plt.subplots(figsize=(10, 3.2), dpi=130)
+
+                ax_bar.barh(
+                    df_media["unidade_label"],
+                    df_media["media_percentual"],
+                    color=df_media["cor"],
+                )
+
+                for i, row in df_media.iterrows():
+                    ax_bar.text(
+                        row["media_percentual"] + 1,
+                        row["unidade_label"],
+                        f"{row['media_percentual']:.1f}% ({int(row['qtd_visitas'])} visitas)",
+                        va="center",
+                        fontsize=8,
+                        fontweight="bold",
+                        color="#333333",
+                    )
+
+                # Linhas de referência
+                ax_bar.axvline(x=90, color="#1a5e1a", linestyle="--", linewidth=0.8, alpha=0.7)
+                ax_bar.axvline(x=80, color="#27ae60", linestyle="--", linewidth=0.8, alpha=0.6)
+                ax_bar.axvline(x=70, color="#f39c12", linestyle="--", linewidth=0.8, alpha=0.6)
+
+                ax_bar.set_xlim(0, 105)
+                ax_bar.set_xlabel("Media de Conformidade (%)", fontsize=8)
+                ax_bar.tick_params(axis="x", labelsize=7)
+                ax_bar.tick_params(axis="y", labelsize=8)
+                ax_bar.grid(axis="x", alpha=0.25)
+                ax_bar.spines["top"].set_visible(False)
+                ax_bar.spines["right"].set_visible(False)
+
+                fig_bar.subplots_adjust(left=0.18, right=0.92, top=0.92, bottom=0.22)
+
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_bar:
+                    fig_bar.savefig(tmp_bar.name, format="png", bbox_inches="tight")
+                    tmp_bar_path = tmp_bar.name
+
+                plt.close(fig_bar)
+
+                pdf._section_title("Media Historica por Unidade")
+
+                img_w_bar = 170
+                img_x_bar = (210 - img_w_bar) / 2
+                y_inicio = pdf.get_y()
+
+                pdf.image(
+                    tmp_bar_path,
+                    x=img_x_bar,
+                    y=y_inicio,
+                    w=img_w_bar,
+                )
+
+                altura_bar = img_w_bar * (
+                    fig_bar.get_figheight() / fig_bar.get_figwidth()
+                )
+
+                pdf.set_y(y_inicio + altura_bar + 4)
+
+                os.remove(tmp_bar_path)
+
+
+    except Exception as e:
+        import traceback
+        print("ERRO AO GERAR GRAFICO HISTORICO NO PDF:")
+        print(e)
+        print(traceback.format_exc())
 
     # ══════════════════════════════════════════════
     # NÃO CONFORMIDADES
@@ -506,4 +696,4 @@ def gerar_pdf(dados_visita):
     # RETORNAR BYTES
     # ══════════════════════════════════════════════
 
-    return pdf.output()
+    return bytes(pdf.output(dest="S"))

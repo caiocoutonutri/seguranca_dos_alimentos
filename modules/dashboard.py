@@ -1,7 +1,7 @@
 # modules/dashboard.py
 # Dashboard de Conformidade — Consultoria Mariner
 # Gráficos Plotly + Pandas para análise pós-visita
-
+from plotly.subplots import make_subplots
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -40,83 +40,6 @@ def cor_por_percentual(pct):
         return CORES["atencao"]
     else:
         return CORES["critico"]
-
-
-# ──────────────────────────────────────────────────
-# GRÁFICO RADAR
-# ──────────────────────────────────────────────────
-
-def grafico_radar(resultado):
-    """
-    Gráfico radar (aranha) com % de conformidade por seção.
-    Recebe o dict retornado por calcular_pontuacao().
-    """
-    secoes_com_dados = [s for s in resultado["secoes"] if s["maximo"] > 0]
-
-    categorias = [f"{s['numero']}. {s['titulo']}" for s in secoes_com_dados]
-    valores = [s["percentual"] for s in secoes_com_dados]
-
-    # Fechar o polígono
-    categorias_fechado = categorias + [categorias[0]]
-    valores_fechado = valores + [valores[0]]
-
-    fig = go.Figure()
-
-    # Área preenchida
-    fig.add_trace(go.Scatterpolar(
-        r=valores_fechado,
-        theta=categorias_fechado,
-        fill="toself",
-        fillcolor="rgba(27, 79, 114, 0.15)",
-        line=dict(color=CORES["azul"], width=2),
-        name="Conformidade",
-        hovertemplate="%{theta}<br>%{r:.1f}%<extra></extra>",
-    ))
-
-    # Linhas de referência (faixas do semáforo)
-    for faixa, cor, nome in [
-        (90, CORES["excelente"], "Excelente (90%)"),
-        (80, CORES["bom"], "Bom (80%)"),
-        (70, CORES["atencao"], "Atenção (70%)"),
-    ]:
-        fig.add_trace(go.Scatterpolar(
-            r=[faixa] * len(categorias_fechado),
-            theta=categorias_fechado,
-            mode="lines",
-            line=dict(color=cor, width=1, dash="dot"),
-            name=nome,
-            showlegend=True,
-            hoverinfo="skip",
-        ))
-
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100],
-                tickvals=[0, 25, 50, 70, 80, 90, 100],
-                ticktext=["0%", "25%", "50%", "70%", "80%", "90%", "100%"],
-                tickfont=dict(size=10, color="#999"),
-            ),
-            angularaxis=dict(
-                tickfont=dict(size=11),
-            ),
-        ),
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.25,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=10),
-        ),
-        margin=dict(l=80, r=80, t=40, b=80),
-        height=520,
-    )
-
-    return fig
-
 
 # ──────────────────────────────────────────────────
 # GRÁFICO DE BARRAS HORIZONTAIS
@@ -420,12 +343,7 @@ def carregar_historico_df():
 # ──────────────────────────────────────────────────
 # GRÁFICO DE EVOLUÇÃO HISTÓRICA
 # ──────────────────────────────────────────────────
-
 def grafico_evolucao(unidade_filtro=None):
-    """
-    Gráfico de linha mostrando evolução da conformidade ao longo das visitas.
-    Se unidade_filtro for None, mostra todas as unidades.
-    """
     historico = carregar_historico()
 
     if not historico:
@@ -439,66 +357,128 @@ def grafico_evolucao(unidade_filtro=None):
     if df.empty:
         return None
 
-    # Converter data para datetime para ordenar
     df["data_dt"] = pd.to_datetime(df["data_visita"], format="%d/%m/%Y", errors="coerce")
-    df = df.sort_values("data_dt")
-    df["visita_label"] = df["data_visita"]
+    df = df.dropna(subset=["data_dt"])
 
-    fig = go.Figure()
+    df["unidade_label"] = df["unidade"].str.replace("Mariner — ", "", regex=False)
 
-    unidades = df["unidade"].unique()
+    # Limitar sempre às últimas 10 visitas por unidade
+    df = (
+        df.sort_values(["unidade_label", "data_dt"])
+        .groupby("unidade_label", group_keys=False)
+        .tail(10)
+        .reset_index(drop=True)
+    )
 
     cores_unidades = [
-        CORES["azul"], CORES["bom"], CORES["atencao"],
-        CORES["critico"], CORES["azul_claro"],
+        CORES["azul"],
+        CORES["bom"],
+        CORES["atencao"],
+        CORES["critico"],
+        CORES["azul_claro"],
     ]
 
+    unidades = df["unidade_label"].dropna().unique().tolist()
+
+    fig = make_subplots(
+        rows=len(unidades),
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.06,
+        subplot_titles=unidades,
+    )
+
     for i, unidade in enumerate(unidades):
-        df_u = df[df["unidade"] == unidade]
+        df_u = df[df["unidade_label"] == unidade]
         cor = cores_unidades[i % len(cores_unidades)]
+        row = i + 1
 
-        fig.add_trace(go.Scatter(
-            x=df_u["visita_label"],
-            y=df_u["percentual_geral"],
-            mode="lines+markers+text",
-            name=unidade.replace("Mariner — ", ""),
-            line=dict(color=cor, width=2),
-            marker=dict(size=10, color=cor),
-            text=df_u["percentual_geral"].apply(lambda x: f"{x:.0f}%"),
-            textposition="top center",
-            textfont=dict(size=10),
-            hovertemplate=(
-                "<b>%{fullData.name}</b><br>"
-                "Data: %{x}<br>"
-                "Conformidade: %{y:.1f}%<br>"
-                "<extra></extra>"
+        fig.add_trace(
+            go.Scatter(
+                x=df_u["data_dt"],
+                y=df_u["percentual_geral"], 
+                mode="lines+markers+text",
+                name=unidade,
+                legendgroup=unidade,
+                line=dict(color=cor, width=3),
+                marker=dict(size=9, color=cor),
+                text=df_u["percentual_geral"].apply(lambda x: f"{x:.0f}%"),
+                textposition="top center",
+                textfont=dict(size=10, color=cor),
+                hovertemplate=(
+                    f"<b>{unidade}</b><br>"
+                    "Data: %{x|%d/%m/%Y}<br>"
+                    "Conformidade: %{y:.1f}%<br>"
+                    "<extra></extra>"
+                ),
             ),
-        ))
+            row=row,
+            col=1,
+        )
 
-    # Faixas de referência
-    fig.add_hline(y=90, line_dash="dot", line_color=CORES["excelente"],
-                  annotation_text="Excelente (90%)", annotation_position="right")
-    fig.add_hline(y=80, line_dash="dot", line_color=CORES["bom"],
-                  annotation_text="Bom (80%)", annotation_position="right")
-    fig.add_hline(y=70, line_dash="dot", line_color=CORES["atencao"],
-                  annotation_text="Atenção (70%)", annotation_position="right")
+        fig.add_hline(
+            y=90,
+            line_dash="dot",
+            line_color=CORES["excelente"],
+            opacity=0.5,
+            row=row,
+            col=1,
+        )
+
+        fig.add_hline(
+            y=80,
+            line_dash="dot",
+            line_color=CORES["bom"],
+            opacity=0.4,
+            row=row,
+            col=1,
+        )
+        y_min = max(0, df_u["percentual_geral"].min() - 5)
+        y_max = min(105, df_u["percentual_geral"].max() + 5)
+
+        if y_max - y_min < 10:
+            y_min = max(0, y_min - 5)
+            y_max = min(105, y_max + 5)
+
+        fig.update_yaxes(
+            range=[y_min, y_max],
+            ticksuffix="%",
+            title_text="%",
+            row=row,
+            col=1,
+        )
+
+    # Datas só no gráfico de baixo
+    for row in range(1, len(unidades)):
+        fig.update_xaxes(
+            showticklabels=False,
+            title_text="",
+            row=row,
+            col=1,
+        )
+
+    fig.update_xaxes(
+        title_text="Data da Visita",
+        type="date",
+        tickformat="%d/%m/%Y",
+        tickangle=-45,
+        row=len(unidades),
+        col=1,
+    )
 
     fig.update_layout(
-        yaxis=dict(
-            range=[0, 105],
-            title="Conformidade (%)",
-            ticksuffix="%",
-        ),
-        xaxis=dict(title="Data da Visita"),
+        title="Evolução de Conformidade por Unidade",
+        height=max(450, len(unidades) * 180),
+        margin=dict(l=60, r=40, t=80, b=80),
         legend=dict(
+            title="Unidade",
             orientation="h",
             yanchor="bottom",
-            y=-0.3,
+            y=-0.18,
             xanchor="center",
             x=0.5,
         ),
-        margin=dict(l=50, r=50, t=30, b=80),
-        height=400,
+        showlegend=True,
     )
 
     return fig
@@ -547,8 +527,9 @@ def grafico_comparativo_unidades():
         textposition="auto",
         textfont=dict(color="white", size=12, family="Arial Black"),
         hovertemplate=(
-            "<b>%{y}</b><br>"
-            "Conformidade: %{x:.1f}%<br>"
+            "<b>%{fullData.name}</b><br>"
+            "Data: %{x|%d/%m/%Y}<br>"
+            "Conformidade: %{y:.1f}%<br>"
             "<extra></extra>"
         ),
     ))
@@ -608,12 +589,9 @@ def renderizar_dashboard(resultado, dados_visita):
     """, unsafe_allow_html=True)
 
     # ── GRÁFICOS EM TABS ──
-    tab_radar, tab_barras, tab_tabela, tab_historico = st.tabs([
-        "🕸️ Radar", "📊 Barras", "📋 Tabela", "📈 Histórico"
+    tab_barras, tab_tabela, tab_historico = st.tabs([
+       "📊 Barras", "📋 Tabela", "📈 Histórico"
     ])
-
-    with tab_radar:
-        st.plotly_chart(grafico_radar(resultado), use_container_width=True)
 
     with tab_barras:
         st.plotly_chart(grafico_barras(resultado), use_container_width=True)
